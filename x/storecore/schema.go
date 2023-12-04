@@ -1,6 +1,10 @@
 package storecore
 
-import "math/big"
+import (
+	"math/big"
+
+	"github.com/umbracle/ethgo/abi"
+)
 
 // The last 32 bytes from the static field are the schema
 func GenerateSchema(data [32]byte) (staticFields, dynamicFields []string) {
@@ -19,4 +23,17 @@ func GenerateSchema(data [32]byte) (staticFields, dynamicFields []string) {
 	}
 
 	return staticFields, dynamicFields
+}
+
+type SchemaNames struct {
+	Cols []string
+}
+
+func DecodeNames(data []byte) (SchemaNames, error) {
+	_type := abi.MustNewType("tuple(string[] cols)")
+	outStruct := SchemaNames{
+		Cols: []string{},
+	}
+	err := _type.DecodeStruct(data, &outStruct)
+	return outStruct, err
 }
