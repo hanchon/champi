@@ -122,7 +122,7 @@ func TestSetStoreRecord(t *testing.T) {
 	fmt.Println(static[:len(static)-64])
 	fmt.Printf("%s\n", bytes.Trim(static[:len(static)-64], "\x00"))
 
-	dynamicLen, totalLen := BytesToLength([32]byte(encodedLen))
+	dynamicLen, totalLen := DecodeEncodedLengths([32]byte(encodedLen))
 	fmt.Println("encoded len")
 	fmt.Println(dynamicLen)
 	fmt.Println(totalLen)

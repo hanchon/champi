@@ -202,3 +202,26 @@ const (
 	BYTES
 	STRING
 )
+
+func GetStaticByteLength(schemaType SchemaType) uint64 {
+	if schemaType < 32 {
+		// uint8-256
+		return uint64(schemaType) + 1
+	} else if schemaType < 64 {
+		// int8-256, offset by 32
+		return uint64(schemaType) + 1 - 32
+	} else if schemaType < 96 {
+		// bytes1-32, offset by 64
+		return uint64(schemaType) + 1 - 64
+	}
+
+	// Other static types
+	if schemaType == BOOL {
+		return 1
+	} else if schemaType == ADDRESS {
+		return 20
+	}
+
+	// Return 0 for all dynamic types
+	return 0
+}
