@@ -3,20 +3,8 @@ package storecore
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/google/go-cmp/cmp"
 )
-
-func StringTo32Byte(s string) [32]byte {
-	bytes, err := hexutil.Decode(s)
-	if err != nil {
-		panic("error decoding the hex string")
-	}
-	if len(bytes) != 32 {
-		panic("invalid lenght")
-	}
-	return [32]byte(bytes)
-}
 
 func TestGenerateSchema(t *testing.T) {
 	tests := map[string]struct {

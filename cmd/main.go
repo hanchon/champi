@@ -89,7 +89,7 @@ type Metadatas struct {
 // func Process(client *ethclient.EthClient, database *data.Database, quit *bool, startingHeight uint64, sleepDuration time.Duration) {
 func Process(client *ethclient.EthClient) {
 	tables := Tables{Tables: []Table{}}
-	metadatas := Metadatas{tables: map[string]Metadata{}}
+	// metadatas := Metadatas{tables: map[string]Metadata{}}
 	// db := createDb()
 	// defer db.Close()
 

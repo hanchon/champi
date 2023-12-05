@@ -126,7 +126,7 @@ func TestSetStoreRecord(t *testing.T) {
 	fmt.Println("encoded len")
 	fmt.Println(dynamicLen)
 	fmt.Println(totalLen)
-	t.Fatalf("error")
+	// t.Fatalf("error")
 
 	// "address": "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c",
 	// "keySchema": {

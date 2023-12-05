@@ -3,17 +3,8 @@ package storecore
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/google/go-cmp/cmp"
 )
-
-func StringToByteArray(s string) []byte {
-	bytes, err := hexutil.Decode(s)
-	if err != nil {
-		panic("error decoding the hex string")
-	}
-	return bytes
-}
 
 func TestDecodeRecord(t *testing.T) {
 	tests := map[string]struct {
@@ -55,7 +46,7 @@ func TestDecodeRecord(t *testing.T) {
 				Schema: []SchemaType{SchemaType(197), SchemaType(197)},
 			},
 		},
-		// TODO: this implementation parses the values, but in MUD it returns one element with 0
+		// TODO: this implementation parses the value, but in MUD it returns one element with 0
 		"out of bound array": {
 			data: "0x0000000000000000000000000000000000000000000000000400000000000004",
 			schema: SchemaTypePair{

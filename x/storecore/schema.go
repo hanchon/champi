@@ -11,6 +11,7 @@ func GenerateSchema(data [32]byte) (staticFields, dynamicFields []string) {
 	staticFields = []string{}
 	dynamicFields = []string{}
 
+	// staticDataLength := new(big.Int).SetBytes(data[0:2]).Uint64()
 	numStaticFields := new(big.Int).SetBytes(data[2:3]).Uint64()
 	numDynamicFields := new(big.Int).SetBytes(data[3:4]).Uint64()
 
@@ -18,6 +19,8 @@ func GenerateSchema(data [32]byte) (staticFields, dynamicFields []string) {
 	for i = 4; i < 4+numStaticFields; i++ {
 		staticFields = append(staticFields, SchemaType(data[i]).String())
 	}
+
+	// TODO: validate that staticFields length is equal to the value sent inside the message
 	for i = 4 + numStaticFields; i < 4+numStaticFields+numDynamicFields; i++ {
 		dynamicFields = append(dynamicFields, SchemaType(data[i]).String())
 	}
