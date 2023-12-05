@@ -16,12 +16,6 @@ type Log struct {
 	dynamicData    string
 }
 
-type TableName struct {
-	ResourceType string
-	Namespace    string
-	Name         string
-}
-
 // Resources
 const (
 	table         = "tb"
@@ -30,14 +24,6 @@ const (
 	module        = "md"
 	system        = "sy"
 )
-
-func KeyToTableName(key [32]byte) TableName {
-	return TableName{
-		ResourceType: fmt.Sprintf("%s", bytes.Trim(key[0:2], "\x00")),
-		Namespace:    fmt.Sprintf("%s", bytes.Trim(key[2:16], "\x00")),
-		Name:         fmt.Sprintf("%s", bytes.Trim(key[16:32], "\x00")),
-	}
-}
 
 //     const resourceTypeId = hexToString(sliceHex(hex, 0, 2)).replace(, "");
 // const type = getResourceType(resourceTypeId);

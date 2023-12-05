@@ -9,33 +9,33 @@ import (
 func TestGenerateSchema(t *testing.T) {
 	tests := map[string]struct {
 		data        string
-		expectedOne []string
-		expectedTwo []string
+		expectedOne []SchemaType
+		expectedTwo []SchemaType
 	}{
 		"static only": {
 			data:        "0x0001010060000000000000000000000000000000000000000000000000000000",
-			expectedOne: []string{"BOOL"},
-			expectedTwo: []string{},
+			expectedOne: []SchemaType{BOOL},
+			expectedTwo: []SchemaType{},
 		},
 		"static only two": {
 			data:        "0x00570800616100030700001f0000000000000000000000000000000000000000",
-			expectedOne: []string{"ADDRESS", "ADDRESS", "UINT8", "UINT32", "UINT64", "UINT8", "UINT8", "UINT256"},
-			expectedTwo: []string{},
+			expectedOne: []SchemaType{ADDRESS, ADDRESS, UINT8, UINT32, UINT64, UINT8, UINT8, UINT256},
+			expectedTwo: []SchemaType{},
 		},
 		"both values": {
 			data:        "0x0001010160c20000000000000000000000000000000000000000000000000000",
-			expectedOne: []string{"BOOL"},
-			expectedTwo: []string{"BOOL_ARRAY"},
+			expectedOne: []SchemaType{BOOL},
+			expectedTwo: []SchemaType{BOOL_ARRAY},
 		},
 		"both values two": {
 			data:        "0x002402045f2381c3c4c500000000000000000000000000000000000000000000",
-			expectedOne: []string{"BYTES32", "INT32"},
-			expectedTwo: []string{"UINT256_ARRAY", "ADDRESS_ARRAY", "BYTES", "STRING"},
+			expectedOne: []SchemaType{BYTES32, INT32},
+			expectedTwo: []SchemaType{UINT256_ARRAY, ADDRESS_ARRAY, BYTES, STRING},
 		},
 		"register tables": {
 			data:        "0x006003025f5f5fc4c40000000000000000000000000000000000000000000000",
-			expectedOne: []string{"BYTES32", "BYTES32", "BYTES32"},
-			expectedTwo: []string{"BYTES", "BYTES"},
+			expectedOne: []SchemaType{BYTES32, BYTES32, BYTES32},
+			expectedTwo: []SchemaType{BYTES, BYTES},
 		},
 	}
 
