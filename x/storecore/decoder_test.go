@@ -25,7 +25,7 @@ func TestDecodeRecord(t *testing.T) {
 					{Value: "2", SchemaType: SchemaType(15)},
 				},
 				DynamicData: []DataElement{
-					{Value: []uint8(`["3","4"]`), SchemaType: SchemaType(101)},
+					{Value: `["3","4"]`, SchemaType: SchemaType(101)},
 					{Value: "some string", SchemaType: SchemaType(197)},
 				},
 			},
@@ -56,7 +56,7 @@ func TestDecodeRecord(t *testing.T) {
 			expectedOne: &DecodedData{
 				StaticData: []DataElement{},
 				DynamicData: []DataElement{
-					{Value: []uint8(`["808464432"]`), SchemaType: SchemaType(101)},
+					{Value: `["808464432"]`, SchemaType: SchemaType(101)},
 				},
 			},
 		},

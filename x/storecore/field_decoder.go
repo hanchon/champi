@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-func DecodeDynamicField(schemaType SchemaType, raw []byte) interface{} {
+func DecodeDynamicField(schemaType SchemaType, raw []byte) string {
 	switch schemaType {
 	case BYTES:
 		return handleBytes(raw)
@@ -28,7 +28,7 @@ func DecodeDynamicField(schemaType SchemaType, raw []byte) interface{} {
 		if err != nil {
 			panic("Could not marshal array:" + err.Error())
 		}
-		return arr
+		return string(arr)
 	}
 }
 
@@ -55,6 +55,6 @@ func DecodeEncodedLengths(data [32]byte) ([]string, string) {
 	eachLength := DecodeDynamicField(UINT40_ARRAY, data[:32-7])
 
 	var m []string
-	json.Unmarshal(eachLength.([]byte), &m)
+	json.Unmarshal([]byte(eachLength), &m)
 	return reverse(m), totalLength.(string)
 }

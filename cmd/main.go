@@ -246,7 +246,7 @@ func Process(client *ethclient.EthClient) {
 			// 	//             dynamicFieldName
 			// 	// data.DynamicData
 			//
-			panic("stop here")
+			// panic("stop here")
 
 			// fmt.Println(string(event.TableId[:]))
 		}
@@ -309,6 +309,8 @@ func Process(client *ethclient.EthClient) {
 	}
 
 	// eth.ProcessBlocks(client, database, big.NewInt(int64(startingHeight)), big.NewInt(int64(endHeight)))
+	fmt.Println("db")
+	fmt.Println(db)
 	quit := true
 
 	for !quit {
@@ -330,6 +332,7 @@ func Process(client *ethclient.EthClient) {
 		// database.LastHeight = newHeight
 
 		time.Sleep(sleepDuration)
+
 	}
 }
 

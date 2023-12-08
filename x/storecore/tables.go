@@ -27,6 +27,7 @@ func HandleStoreSetRecord(db *Database, event *StorecoreStoreSetRecord) {
 
 	if event.TableId == STORE_TABLES {
 		fmt.Println("creating tables")
+		fmt.Println(key)
 		table, data := CreateNewTable(db, &key, event)
 		fmt.Println("1")
 		fmt.Println(table)
@@ -90,16 +91,13 @@ func CreateNewTable(db *Database, key *Key, event *StorecoreStoreSetRecord) (*Ta
 	// fmt.Println("Values Schema:")
 	// fmt.Println(valuesStatic)
 	// fmt.Println(valuesDynamic)
-	length := uint64(0)
-	for _, v := range valuesStatic {
-		length += GetStaticByteLength(v)
-	}
 
 	// Field Names
 	data := DecodeRecord(append(event.StaticData, append(event.EncodedLengths[:], event.DynamicData...)...), SchemaTypes{
-		Static:           valuesStatic,
-		Dynamic:          valuesDynamic,
-		StaticDataLength: length,
+		// Hardcoded values based on MUD doc for encoding tables
+		Static:           []SchemaType{BYTES32, BYTES32, BYTES32},
+		Dynamic:          []SchemaType{BYTES, BYTES},
+		StaticDataLength: GetStaticByteLength(BYTES32) * 3,
 	})
 
 	table := Table{

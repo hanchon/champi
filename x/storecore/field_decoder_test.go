@@ -45,23 +45,23 @@ func TestDynamicFieldDecoder(t *testing.T) {
 		"BOOL_ARRAY": {
 			data:        "0x00",
 			schema:      BOOL_ARRAY,
-			expectedOne: []uint8(`["false"]`),
+			expectedOne: `["false"]`,
 		},
 		"UINT8_ARRAY": {
 			data:        "0x00",
 			schema:      UINT8_ARRAY,
-			expectedOne: []uint8(`["0"]`),
+			expectedOne: `["0"]`,
 		},
 		"UINT256_ARRAY": {
 			data:        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 			schema:      UINT256_ARRAY,
-			expectedOne: []uint8(`["115792089237316195423570985008687907853269984665640564039457584007913129639935"]`),
+			expectedOne: `["115792089237316195423570985008687907853269984665640564039457584007913129639935"]`,
 		},
 		// TODO: this should be negative 1
 		"INT8_ARRAY": {
 			data:        "0xff",
 			schema:      INT8_ARRAY,
-			expectedOne: []uint8(`["-1"]`),
+			expectedOne: `["-1"]`,
 		},
 	}
 
