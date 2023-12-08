@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/bocha-io/champi/x/storecore"
@@ -16,7 +14,6 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -66,44 +63,44 @@ func PaddedTableId(id [32]byte) string {
 // "tbstoreTables"
 var STORE_TABLES = [32]byte{116, 98, 115, 116, 111, 114, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84, 97, 98, 108, 101, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-type Metadata struct {
-	tableID              string
-	fieldLayout          string
-	keySchema            string
-	valueSchema          string
-	abiEncodedKeyNames   string
-	abiEncodedValueNames string
-}
-
-type Key struct {
-	world string
-	storecore.TableName
-}
-
-type Database struct {
-	Tables map[Key]Table
-}
-
-type Field struct {
-	dataType storecore.SchemaType
-	name     string
-}
-
-type Schema struct {
-	staticFields  []Field
-	dynamicFields []Field
-}
-
-type Table struct {
-	Schema Schema
-	Data   map[string][]interface{}
-}
-
-func NewDatabase() *Database {
-	return &Database{
-		Tables: map[Key]Table{},
-	}
-}
+// type Metadata struct {
+// 	tableID              string
+// 	fieldLayout          string
+// 	keySchema            string
+// 	valueSchema          string
+// 	abiEncodedKeyNames   string
+// 	abiEncodedValueNames string
+// }
+//
+// type Key struct {
+// 	world string
+// 	storecore.TableName
+// }
+//
+// type Database struct {
+// 	Tables map[Key]Table
+// }
+//
+// type Field struct {
+// 	dataType storecore.SchemaType
+// 	name     string
+// }
+//
+// type Schema struct {
+// 	staticFields  []Field
+// 	dynamicFields []Field
+// }
+//
+// type Table struct {
+// 	Schema Schema
+// 	Data   map[string][]interface{}
+// }
+//
+// func NewDatabase() *Database {
+// 	return &Database{
+// 		Tables: map[Key]Table{},
+// 	}
+// }
 
 // func Process(client *ethclient.EthClient, database *data.Database, quit *bool, startingHeight uint64, sleepDuration time.Duration) {
 func Process(client *ethclient.EthClient) {
@@ -111,7 +108,7 @@ func Process(client *ethclient.EthClient) {
 	// metadatas := Metadatas{tables: map[string]Metadata{}}
 	// db := createDb()
 	// defer db.Close()
-	db := NewDatabase()
+	db := storecore.NewDatabase()
 
 	startingHeight := uint64(0)
 	sleepDuration := time.Duration(1 * time.Second)
@@ -129,10 +126,10 @@ func Process(client *ethclient.EthClient) {
 
 	logs := client.FilterLogs(QueryForStoreLogs(big.NewInt(int64(startingHeight)), big.NewInt(int64(endHeight))))
 	logs = OrderLogs(logs)
-	fmt.Println(MetadataTableId())
-	fmt.Println(SchemaTableId())
-	fmt.Println("-----")
-	for k, v := range logs {
+	// fmt.Println(MetadataTableId())
+	// fmt.Println(SchemaTableId())
+	// fmt.Println("-----")
+	for _, v := range logs {
 		// fmt.Println(v.TxHash.Hex())
 		// for _, t := range v.Topics {
 		// 	a, _ := hex.DecodeString(strings.ReplaceAll(t.String(), "0x", ""))
@@ -140,7 +137,7 @@ func Process(client *ethclient.EthClient) {
 		// }
 
 		// var logMudEvent data.MudEvent
-		fmt.Println(k)
+		// fmt.Println(k)
 
 		if v.Topics[0] == storecore.GetEventID(storecore.SetRecordEventID) {
 			event, err := storecore.ParseStoreSetRecord(v)
@@ -149,146 +146,146 @@ func Process(client *ethclient.EthClient) {
 				// TODO: what should we do here?
 				break
 			}
+			storecore.HandleStoreSetRecord(db, event)
 
-			fmt.Println("using world:")
-			fmt.Println(storecore.GetWorld(event.Raw))
-
-			tableName := storecore.KeyToTableName(event.KeyTuple[0])
-			key := Key{
-				world:     storecore.GetWorld(event.Raw),
-				TableName: tableName,
-			}
-
-			// Table creation
-			if event.TableId == STORE_TABLES {
-				// if metadatas[event.TableId]
-				fmt.Print("Registering table:")
-				fmt.Println(storecore.KeyToTableName(event.KeyTuple[0]))
-
-				// tables.Tables = append(tables.Tables, Table{
-				// 	Name: string(event.KeyTuple[0][:]),
-				// })
-				// fmt.Println(event.StaticData[:])
-
-				// ValuesSchema
-				staticTypes, dynamicTypes := storecore.GenerateSchema([32]byte(event.StaticData[len(event.StaticData)-32:]))
-				fmt.Println("Values Schema:")
-				fmt.Println(staticTypes)
-				fmt.Println(dynamicTypes)
-				// KeySchema
-				staticTypeKey, dynamicTypeKey := storecore.GenerateSchema([32]byte(event.StaticData[len(event.StaticData)-64 : len(event.StaticData)-32]))
-				fmt.Println("Key Schema:")
-				fmt.Println(staticTypeKey)
-				fmt.Println(dynamicTypeKey)
-				// Field Names
-				data := storecore.DecodeRecord(append(event.StaticData, append(event.EncodedLengths[:], event.DynamicData...)...), storecore.SchemaTypes{
-					Static: []storecore.SchemaType{storecore.BYTES32, storecore.BYTES32, storecore.BYTES32},
-					Dynamic: []storecore.SchemaType{
-						storecore.BYTES,
-						storecore.BYTES,
-					},
-					StaticDataLength: storecore.GetStaticByteLength(storecore.BYTES32) * 3,
-				})
-
-				x, _ := hexutil.Decode(data.DynamicData[0].Value.(string))
-				keyNames, err := storecore.DecodeNames(x)
-				if err != nil {
-					fmt.Println("invalid field names")
-				}
-				fmt.Println("Key Names:")
-				fmt.Println(keyNames.Cols)
-
-				x, _ = hexutil.Decode(data.DynamicData[1].Value.(string))
-				valueNames, err := storecore.DecodeNames(x)
-				if err != nil {
-					fmt.Println("invalid field names")
-				}
-				fmt.Println("Values Names:")
-				fmt.Println(valueNames.Cols)
-
-				staticFields := []Field{}
-				for k := range staticTypes {
-					staticFields = append(staticFields, Field{
-						dataType: staticTypes[k],
-						name:     valueNames.Cols[k],
-					})
-				}
-
-				dynamicFields := []Field{}
-				for k := range dynamicTypes {
-					dynamicFields = append(dynamicFields, Field{
-						dataType: dynamicTypes[k],
-						name:     valueNames.Cols[k+len(staticFields)],
-					})
-				}
-				rowKey := hexutil.Encode(event.KeyTuple[0][:])
-
-				values := []interface{}{}
-				for _, v := range data.StaticData {
-					values = append(values, v.Value.(string))
-				}
-				for _, v := range data.DynamicData {
-					values = append(values, v.Value.(string))
-				}
-
-				table := Table{
-					Schema: Schema{
-						staticFields:  staticFields,
-						dynamicFields: dynamicFields,
-					},
-					Data: map[string][]interface{}{
-						rowKey: values,
-					},
-				}
-				db.Tables[key] = table
-
-				fmt.Println(db)
-
-				//             staticFieldName :=storecore.DecodeNames(data.DynamicData[0].Value)
-				//             dynamicFieldName
-				// data.DynamicData
-
-				panic("stop here")
-
-				// fmt.Println(string(event.TableId[:]))
-			} else {
-				fmt.Println("qwe")
-				fmt.Println(string(event.TableId[:]))
-				fmt.Println(event.TableId[:])
-				fmt.Println(STORE_TABLES)
-				fmt.Println(event.TableId == STORE_TABLES)
-				table := PaddedTableId(event.TableId)
-				fmt.Println(table)
-				tablename, _ := hex.DecodeString(strings.ReplaceAll(table, "0x", ""))
-				fmt.Println("tablename")
-				fmt.Println(string(tablename))
-				for _, v := range event.KeyTuple {
-					fmt.Println(v)
-					fmt.Println(string(hex.EncodeToString(v[:])))
-					fmt.Println(string(v[:]))
-				}
-				if table == MetadataTableId() {
-					panic("metadata")
-				}
-				if table == SchemaTableId() {
-					panic("schema")
-				}
-				panic("stop")
-			}
-
-			// switch mudhelpers.PaddedTableId(event.TableId) {
-			// case mudhelpers.SchemaTableId():
-			// 	logger.LogInfo("[indexer] processing and creating schema table")
-			// 	mudhandlers.HandleSchemaTableEvent(event, db)
-			// case mudhelpers.MetadataTableId():
-			// 	logger.LogInfo("[indexer] processing and updating a schema with metadata")
-			// 	mudhandlers.HandleMetadataTableEvent(event, db)
-			// default:
-			// 	logger.LogInfo("[indexer] processing a generic table event like adding a row")
-			// 	logMudEvent = mudhandlers.HandleGenericTableEvent(event, db)
+			// fmt.Println("using world:")
+			// fmt.Println(storecore.GetWorld(event.Raw))
+			//
+			// tableName := storecore.KeyToTableName(event.KeyTuple[0])
+			// key := Key{
+			// 	world:     storecore.GetWorld(event.Raw),
+			// 	TableName: tableName,
 			// }
+			//
+			// // Table creation
+			// if event.TableId == STORE_TABLES {
+			// 	// if metadatas[event.TableId]
+			// 	fmt.Print("Registering table:")
+			// 	fmt.Println(storecore.KeyToTableName(event.KeyTuple[0]))
+			//
+			// 	// tables.Tables = append(tables.Tables, Table{
+			// 	// 	Name: string(event.KeyTuple[0][:]),
+			// 	// })
+			// 	// fmt.Println(event.StaticData[:])
+			//
+			// 	// ValuesSchema
+			// 	staticTypes, dynamicTypes := storecore.GenerateSchema([32]byte(event.StaticData[len(event.StaticData)-32:]))
+			// 	fmt.Println("Values Schema:")
+			// 	fmt.Println(staticTypes)
+			// 	fmt.Println(dynamicTypes)
+			// 	// KeySchema
+			// 	staticTypeKey, dynamicTypeKey := storecore.GenerateSchema([32]byte(event.StaticData[len(event.StaticData)-64 : len(event.StaticData)-32]))
+			// 	fmt.Println("Key Schema:")
+			// 	fmt.Println(staticTypeKey)
+			// 	fmt.Println(dynamicTypeKey)
+			// 	// Field Names
+			// 	data := storecore.DecodeRecord(append(event.StaticData, append(event.EncodedLengths[:], event.DynamicData...)...), storecore.SchemaTypes{
+			// 		Static: []storecore.SchemaType{storecore.BYTES32, storecore.BYTES32, storecore.BYTES32},
+			// 		Dynamic: []storecore.SchemaType{
+			// 			storecore.BYTES,
+			// 			storecore.BYTES,
+			// 		},
+			// 		StaticDataLength: storecore.GetStaticByteLength(storecore.BYTES32) * 3,
+			// 	})
+			//
+			// 	x, _ := hexutil.Decode(data.DynamicData[0].Value.(string))
+			// 	keyNames, err := storecore.DecodeNames(x)
+			// 	if err != nil {
+			// 		fmt.Println("invalid field names")
+			// 	}
+			// 	fmt.Println("Key Names:")
+			// 	fmt.Println(keyNames.Cols)
+			//
+			// 	x, _ = hexutil.Decode(data.DynamicData[1].Value.(string))
+			// 	valueNames, err := storecore.DecodeNames(x)
+			// 	if err != nil {
+			// 		fmt.Println("invalid field names")
+			// 	}
+			// 	fmt.Println("Values Names:")
+			// 	fmt.Println(valueNames.Cols)
+			//
+			// 	staticFields := []Field{}
+			// 	for k := range staticTypes {
+			// 		staticFields = append(staticFields, Field{
+			// 			dataType: staticTypes[k],
+			// 			name:     valueNames.Cols[k],
+			// 		})
+			// 	}
+			//
+			// 	dynamicFields := []Field{}
+			// 	for k := range dynamicTypes {
+			// 		dynamicFields = append(dynamicFields, Field{
+			// 			dataType: dynamicTypes[k],
+			// 			name:     valueNames.Cols[k+len(staticFields)],
+			// 		})
+			// 	}
+			// 	rowKey := hexutil.Encode(event.KeyTuple[0][:])
+			//
+			// 	values := []interface{}{}
+			// 	for _, v := range data.StaticData {
+			// 		values = append(values, v.Value.(string))
+			// 	}
+			// 	for _, v := range data.DynamicData {
+			// 		values = append(values, v.Value.(string))
+			// 	}
+			//
+			// 	table := Table{
+			// 		Schema: Schema{
+			// 			staticFields:  staticFields,
+			// 			dynamicFields: dynamicFields,
+			// 		},
+			// 		Data: map[string][]interface{}{
+			// 			rowKey: values,
+			// 		},
+			// 	}
+			// 	db.Tables[key] = table
+			//
+			// 	fmt.Println(db)
+			//
+			// 	//             staticFieldName :=storecore.DecodeNames(data.DynamicData[0].Value)
+			// 	//             dynamicFieldName
+			// 	// data.DynamicData
+			//
+			panic("stop here")
 
+			// fmt.Println(string(event.TableId[:]))
 		}
+		//       else {
+		// 	fmt.Println("qwe")
+		// 	fmt.Println(string(event.TableId[:]))
+		// 	fmt.Println(event.TableId[:])
+		// 	fmt.Println(STORE_TABLES)
+		// 	fmt.Println(event.TableId == STORE_TABLES)
+		// 	table := PaddedTableId(event.TableId)
+		// 	fmt.Println(table)
+		// 	tablename, _ := hex.DecodeString(strings.ReplaceAll(table, "0x", ""))
+		// 	fmt.Println("tablename")
+		// 	fmt.Println(string(tablename))
+		// 	for _, v := range event.KeyTuple {
+		// 		fmt.Println(v)
+		// 		fmt.Println(string(hex.EncodeToString(v[:])))
+		// 		fmt.Println(string(v[:]))
+		// 	}
+		// 	if table == MetadataTableId() {
+		// 		panic("metadata")
+		// 	}
+		// 	if table == SchemaTableId() {
+		// 		panic("schema")
+		// 	}
+		// 	panic("stop")
+		// }
+
+		// switch mudhelpers.PaddedTableId(event.TableId) {
+		// case mudhelpers.SchemaTableId():
+		// 	logger.LogInfo("[indexer] processing and creating schema table")
+		// 	mudhandlers.HandleSchemaTableEvent(event, db)
+		// case mudhelpers.MetadataTableId():
+		// 	logger.LogInfo("[indexer] processing and updating a schema with metadata")
+		// 	mudhandlers.HandleMetadataTableEvent(event, db)
+		// default:
+		// 	logger.LogInfo("[indexer] processing a generic table event like adding a row")
+		// 	logMudEvent = mudhandlers.HandleGenericTableEvent(event, db)
+		// }
 
 		// if v.Topics[0].Hex() == mudhelpers.GetStoreAbiEventID("StoreSetField").Hex() {
 		// 	event, err := mudhandlers.ParseStoreSetField(v)

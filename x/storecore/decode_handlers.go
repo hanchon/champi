@@ -26,8 +26,11 @@ func handleInt(raw []byte, schemaType SchemaType) string {
 	return value.String()
 }
 
-func handleBool(raw byte) bool {
-	return raw == 1
+func handleBool(raw byte) string {
+	if raw == 1 {
+		return "true"
+	}
+	return "false"
 }
 
 func handleAddress(raw []byte) string {

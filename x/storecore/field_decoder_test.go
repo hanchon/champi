@@ -1,8 +1,6 @@
 package storecore
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,7 +21,7 @@ func TestStaticFieldDecoder(t *testing.T) {
 		"BOOL": {
 			data:        "0x00",
 			schema:      SchemaType(96),
-			expectedOne: false,
+			expectedOne: "false",
 		},
 	}
 
@@ -47,7 +45,7 @@ func TestDynamicFieldDecoder(t *testing.T) {
 		"BOOL_ARRAY": {
 			data:        "0x00",
 			schema:      BOOL_ARRAY,
-			expectedOne: []uint8("[false]"),
+			expectedOne: []uint8(`["false"]`),
 		},
 		"UINT8_ARRAY": {
 			data:        "0x00",
@@ -71,27 +69,6 @@ func TestDynamicFieldDecoder(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			actualOne := DecodeDynamicField(test.schema, StringToByteArray(test.data))
 			if diff := cmp.Diff(actualOne, test.expectedOne); diff != "" {
-				var m []int8
-				json.Unmarshal(actualOne.([]byte), &m)
-				fmt.Println("m")
-				fmt.Println(m)
-				fmt.Println(actualOne)
-				fmt.Println(test.expectedOne)
-				// q := binary.BigEndian.Uint16([]byte("\xff"))
-				// fmt.Println("q")
-				// fmt.Println(q)
-				// fmt.Println(uint8(q))
-				// fmt.Println(string(actualOne.([]uint8)))
-
-				// big, _ := hexutil.DecodeBig("0xff")
-				// fmt.Println(big)
-				// fmt.Println(int8(big.Int64()))
-
-				// a, err := strconv.ParseInt("0xff", 0, 16)
-				// fmt.Println(err)
-				// fmt.Println(uint8(a))
-				// temp, _ := strconv.ParseInt(strings.ReplaceAll(strings.ReplaceAll(string(actualOne.([]uint8)), "[\"", ""), "\"]", ""), 10, 8)
-				// fmt.Println(temp)
 				t.Errorf("static data doesn't match: %v", diff)
 			}
 

@@ -49,6 +49,10 @@ type TableName struct {
 	Name         string
 }
 
+func (t *TableName) Equals(other *TableName) bool {
+	return t.ResourceType == other.ResourceType && t.Namespace == other.Namespace && t.Name == other.Name
+}
+
 func KeyToTableName(key [32]byte) TableName {
 	return TableName{
 		ResourceType: fmt.Sprintf("%s", bytes.Trim(key[0:2], "\x00")),
