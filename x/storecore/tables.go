@@ -15,28 +15,97 @@ var STORE_TABLES_KEY = TableName{
 	Name:         "Tables",
 }
 
-func HandleStoreSetRecord(db *Database, event *StorecoreStoreSetRecord) {
-	fmt.Println("using world:")
-	fmt.Println(GetWorld(event.Raw))
+// Resources
+const (
+	TABLE_PREFIX         = "tb"
+	OFFCHAINTABLE_PREFIX = "ot"
+	NAMESPACE_PREFIX     = "ns"
+	MODULE_PREFIX        = "md"
+	SYSTEM_PREFIX        = "sy"
+)
 
-	tableName := KeyToTableName(event.KeyTuple[0])
+func FieldToSchema(in []Field) []SchemaType {
+	out := make([]SchemaType, len(in))
+	for k := range in {
+		out[k] = in[k].dataType
+	}
+	return out
+}
+
+func HandleStoreSetRecord(db *Database, event *StorecoreStoreSetRecord) {
+	tableName := KeyToTableName(event.TableId)
+
+	if tableName.ResourceType != TABLE_PREFIX && tableName.ResourceType != OFFCHAINTABLE_PREFIX {
+		// if tableName.ResourceType != TABLE_PREFIX {
+		fmt.Printf("ignoring resource: %d  %s. %s  -  %s\n", len(event.KeyTuple), tableName.ResourceType, tableName.Name, tableName.Namespace)
+		return
+	}
+
+	if event.TableId == STORE_TABLES {
+		tableName := KeyToTableName(event.KeyTuple[0])
+		key := Key{
+			world:     GetWorld(event.Raw),
+			TableName: tableName,
+		}
+
+		fmt.Println("creating tables")
+		fmt.Println(key)
+		data := CreateNewTable(db, &key, event)
+		var STORE_KEY = Key{
+			world:     GetWorld(event.Raw),
+			TableName: KeyToTableName(STORE_TABLES),
+		}
+		AddRow(db, event.KeyTuple, data, &STORE_KEY, &Raw{
+			StaticData:     event.StaticData,
+			DynamicData:    event.DynamicData,
+			EncodedLengths: event.EncodedLengths,
+		})
+		return
+	}
+
+	fmt.Println("adding record to:")
+	fmt.Println(tableName)
+	fmt.Println("key:")
+
 	key := Key{
 		world:     GetWorld(event.Raw),
 		TableName: tableName,
 	}
+	fmt.Println(key)
+	table := db.GetTable(&key)
 
-	if event.TableId == STORE_TABLES {
-		fmt.Println("creating tables")
-		fmt.Println(key)
-		table, data := CreateNewTable(db, &key, event)
-		fmt.Println("1")
-		fmt.Println(table)
-		AddRow(db, &key, event, data, table)
-		fmt.Println("2")
-		fmt.Println(table)
-		// CreateTable(db, &key, event)
+	if table == nil {
+		fmt.Println(event.KeyTuple)
+		fmt.Println(event.StaticData)
+		fmt.Println(event.EncodedLengths)
+		fmt.Println(event.DynamicData)
+		// if tableName.Name == "FunctionSignatur" {
+		// 	// This is fixes in next15
+		// 	return
+		// }
+		fmt.Println("schema not stored")
+		return
 	}
 
+	data := DecodeRecord(append(event.StaticData, append(event.EncodedLengths[:], event.DynamicData...)...), SchemaTypes{
+		Static:           FieldToSchema(table.ValueSchema.staticFields),
+		Dynamic:          FieldToSchema(table.ValueSchema.dynamicFields),
+		StaticDataLength: 0,
+	})
+	AddRow(db, event.KeyTuple, data, &key, &Raw{
+		StaticData:     event.StaticData,
+		DynamicData:    event.DynamicData,
+		EncodedLengths: event.EncodedLengths,
+	})
+}
+
+func PrintDebug(db *Database) {
+	var STORE_KEY = Key{
+		world:     "0xE3a6D6D5570f1d87D45036eAC17342FfE32d8F46",
+		TableName: KeyToTableName(STORE_TABLES),
+	}
+	fmt.Println(db.Tables[STORE_KEY])
+	fmt.Println(len(db.Tables[STORE_KEY].Data))
 }
 
 func AddNamesToSchema(staticType, dynamicType []SchemaType, data DataElement) Schema {
@@ -79,7 +148,7 @@ func AddNamesToSchema(staticType, dynamicType []SchemaType, data DataElement) Sc
 	}
 }
 
-func CreateNewTable(db *Database, key *Key, event *StorecoreStoreSetRecord) (*Table, *DecodedData) {
+func CreateNewTable(db *Database, key *Key, event *StorecoreStoreSetRecord) *DecodedData {
 	// KeySchema
 	keyStatic, keyDynamic := GenerateSchema([32]byte(event.StaticData[len(event.StaticData)-64 : len(event.StaticData)-32]))
 	// fmt.Println("Key Schema:")
@@ -105,21 +174,24 @@ func CreateNewTable(db *Database, key *Key, event *StorecoreStoreSetRecord) (*Ta
 		KeySchema:   AddNamesToSchema(keyStatic, keyDynamic, data.DynamicData[0]),
 		ValueSchema: AddNamesToSchema(valuesStatic, valuesDynamic, data.DynamicData[1]),
 		Data:        map[string][]interface{}{},
+		RawData:     map[string]*Raw{},
 	}
 
 	db.AddTable(key, &table)
 
-	return &table, data
+	return data
 }
 
-func AddRow(db *Database, key *Key, event *StorecoreStoreSetRecord, data *DecodedData, table *Table) {
+func KeyTupleToDBKey(keyTuple [][32]byte) string {
 	temp := []byte{}
-	for k := range event.KeyTuple {
-		temp = append(temp, event.KeyTuple[k][:]...)
+	for k := range keyTuple {
+		temp = append(temp, keyTuple[k][:]...)
 	}
+	return hexutil.Encode(temp)
+}
 
-	rowKey := hexutil.Encode(temp)
-
+func AddRow(db *Database, keyTuple [][32]byte, data *DecodedData, tableKey *Key, raw *Raw) {
+	rowKey := KeyTupleToDBKey(keyTuple)
 	values := []interface{}{}
 	for _, v := range data.StaticData {
 		values = append(values, v.Value.(string))
@@ -127,90 +199,58 @@ func AddRow(db *Database, key *Key, event *StorecoreStoreSetRecord, data *Decode
 	for _, v := range data.DynamicData {
 		values = append(values, v.Value.(string))
 	}
-	table.Data[rowKey] = values
+	db.AddRow(tableKey, rowKey, values, raw)
 }
 
-func CreateTable(db *Database, key *Key, event *StorecoreStoreSetRecord) {
-	// Table creation
-	if event.TableId == STORE_TABLES {
-		fmt.Print("Registering table:")
-		fmt.Println(KeyToTableName(event.KeyTuple[0]))
-
-		// ValuesSchema
-		staticTypes, dynamicTypes := GenerateSchema([32]byte(event.StaticData[len(event.StaticData)-32:]))
-		fmt.Println("Values Schema:")
-		fmt.Println(staticTypes)
-		fmt.Println(dynamicTypes)
-		// KeySchema
-		staticTypeKey, dynamicTypeKey := GenerateSchema([32]byte(event.StaticData[len(event.StaticData)-64 : len(event.StaticData)-32]))
-		fmt.Println("Key Schema:")
-		fmt.Println(staticTypeKey)
-		fmt.Println(dynamicTypeKey)
-		// Field Names
-		data := DecodeRecord(append(event.StaticData, append(event.EncodedLengths[:], event.DynamicData...)...), SchemaTypes{
-			Static: []SchemaType{BYTES32, BYTES32, BYTES32},
-			Dynamic: []SchemaType{
-				BYTES,
-				BYTES,
-			},
-			StaticDataLength: GetStaticByteLength(BYTES32) * 3,
-		})
-
-		x, _ := hexutil.Decode(data.DynamicData[0].Value.(string))
-		keyNames, err := DecodeNames(x)
-		if err != nil {
-			fmt.Println("invalid field names")
-		}
-		fmt.Println("Key Names:")
-		fmt.Println(keyNames.Cols)
-
-		x, _ = hexutil.Decode(data.DynamicData[1].Value.(string))
-		valueNames, err := DecodeNames(x)
-		if err != nil {
-			fmt.Println("invalid field names")
-		}
-		fmt.Println("Values Names:")
-		fmt.Println(valueNames.Cols)
-
-		staticFields := []Field{}
-		for k := range staticTypes {
-			staticFields = append(staticFields, Field{
-				dataType: staticTypes[k],
-				name:     valueNames.Cols[k],
-			})
-		}
-
-		dynamicFields := []Field{}
-		for k := range dynamicTypes {
-			dynamicFields = append(dynamicFields, Field{
-				dataType: dynamicTypes[k],
-				name:     valueNames.Cols[k+len(staticFields)],
-			})
-		}
-		rowKey := hexutil.Encode(event.KeyTuple[0][:])
-
-		values := []interface{}{}
-		for _, v := range data.StaticData {
-			values = append(values, v.Value.(string))
-		}
-		for _, v := range data.DynamicData {
-			values = append(values, v.Value.(string))
-		}
-
-		table := Table{
-			// KeySchema: Schema{
-			// 	staticFields:  staticTypeKey,
-			// 	dynamicFields: dynamicTypeKey,
-			// },
-			// ValueSchema: Schema{
-			// 	staticFields:  staticFields,
-			// 	dynamicFields: dynamicFields,
-			// },
-			Data: map[string][]interface{}{
-				rowKey: values,
-			},
-		}
-		db.Tables[*key] = &table
-		fmt.Println(db)
+func HandleStoreSpliceStaticData(db *Database, event *StorecoreStoreSpliceStaticData) {
+	tableName := KeyToTableName(event.TableId)
+	key := Key{
+		world:     GetWorld(event.Raw),
+		TableName: tableName,
 	}
+
+	table := db.GetTable(&key)
+	if table == nil {
+		fmt.Println("----- Table NOT found while splice static -----")
+		return
+	}
+
+	rowKey := KeyTupleToDBKey(event.KeyTuple)
+
+	prevValue, ok := table.RawData[rowKey]
+	data, _ := table.Data[rowKey]
+	if !ok {
+		fmt.Println("schema")
+		fmt.Println(table.ValueSchema)
+		prevValue = EmptyRaw(table.ValueSchema.staticFields)
+		data = make([]interface{}, len(table.ValueSchema.staticFields)+len(table.ValueSchema.dynamicFields))
+		for k := range data {
+			data[k] = ""
+		}
+	}
+	fmt.Println("lengthh------>>>>")
+	fmt.Println(len(prevValue.StaticData))
+	fmt.Println("start")
+	fmt.Println(event.Start.Uint64())
+
+	// We can read all the values because the Raw was init with the static length
+	fmt.Println("old data")
+	fmt.Println(prevValue.StaticData)
+	prevValue.StaticData = append(append(prevValue.StaticData[0:event.Start.Uint64()], event.Data...), prevValue.StaticData[event.Start.Uint64()+uint64(len(event.Data)):]...)
+	fmt.Println("new data")
+	fmt.Println(prevValue.StaticData)
+
+	// Decode it and store the decoded values
+	decodedData := DecodeRecord(prevValue.StaticData, SchemaTypes{
+		Static:           FieldToSchema(table.ValueSchema.staticFields),
+		Dynamic:          []SchemaType{},
+		StaticDataLength: 0,
+	})
+
+	for k, v := range decodedData.StaticData {
+		data[k] = v.Value.(string)
+		fmt.Println("new value from splice: " + data[k].(string))
+	}
+
+	table.Data[rowKey] = data
 }

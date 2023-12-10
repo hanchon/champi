@@ -147,109 +147,43 @@ func Process(client *ethclient.EthClient) {
 				break
 			}
 			storecore.HandleStoreSetRecord(db, event)
+		} else if v.Topics[0] == storecore.GetEventID(storecore.DeleteRecordEventID) {
+			event, err := storecore.ParseStoreDeleteRecord(v)
+			if err != nil {
+				logger.LogError(fmt.Sprintf("[indexer] error decoding message:%s", err))
+				// TODO: what should we do here?
+				break
+			}
+			fmt.Println("DELETE RECORD EVENT ------")
+			tableName := storecore.KeyToTableName(event.TableId)
+			fmt.Println(tableName)
+		} else if v.Topics[0] == storecore.GetEventID(storecore.SpliceStaticDataEventID) {
+			event, err := storecore.ParseStoreSpliceStaticData(v)
+			if err != nil {
+				logger.LogError(fmt.Sprintf("[indexer] error decoding message:%s", err))
+				// TODO: what should we do here?
+				break
+			}
+			fmt.Println("Splice static RECORD EVENT ------")
 
-			// fmt.Println("using world:")
-			// fmt.Println(storecore.GetWorld(event.Raw))
-			//
-			// tableName := storecore.KeyToTableName(event.KeyTuple[0])
-			// key := Key{
-			// 	world:     storecore.GetWorld(event.Raw),
-			// 	TableName: tableName,
-			// }
-			//
-			// // Table creation
-			// if event.TableId == STORE_TABLES {
-			// 	// if metadatas[event.TableId]
-			// 	fmt.Print("Registering table:")
-			// 	fmt.Println(storecore.KeyToTableName(event.KeyTuple[0]))
-			//
-			// 	// tables.Tables = append(tables.Tables, Table{
-			// 	// 	Name: string(event.KeyTuple[0][:]),
-			// 	// })
-			// 	// fmt.Println(event.StaticData[:])
-			//
-			// 	// ValuesSchema
-			// 	staticTypes, dynamicTypes := storecore.GenerateSchema([32]byte(event.StaticData[len(event.StaticData)-32:]))
-			// 	fmt.Println("Values Schema:")
-			// 	fmt.Println(staticTypes)
-			// 	fmt.Println(dynamicTypes)
-			// 	// KeySchema
-			// 	staticTypeKey, dynamicTypeKey := storecore.GenerateSchema([32]byte(event.StaticData[len(event.StaticData)-64 : len(event.StaticData)-32]))
-			// 	fmt.Println("Key Schema:")
-			// 	fmt.Println(staticTypeKey)
-			// 	fmt.Println(dynamicTypeKey)
-			// 	// Field Names
-			// 	data := storecore.DecodeRecord(append(event.StaticData, append(event.EncodedLengths[:], event.DynamicData...)...), storecore.SchemaTypes{
-			// 		Static: []storecore.SchemaType{storecore.BYTES32, storecore.BYTES32, storecore.BYTES32},
-			// 		Dynamic: []storecore.SchemaType{
-			// 			storecore.BYTES,
-			// 			storecore.BYTES,
-			// 		},
-			// 		StaticDataLength: storecore.GetStaticByteLength(storecore.BYTES32) * 3,
-			// 	})
-			//
-			// 	x, _ := hexutil.Decode(data.DynamicData[0].Value.(string))
-			// 	keyNames, err := storecore.DecodeNames(x)
-			// 	if err != nil {
-			// 		fmt.Println("invalid field names")
-			// 	}
-			// 	fmt.Println("Key Names:")
-			// 	fmt.Println(keyNames.Cols)
-			//
-			// 	x, _ = hexutil.Decode(data.DynamicData[1].Value.(string))
-			// 	valueNames, err := storecore.DecodeNames(x)
-			// 	if err != nil {
-			// 		fmt.Println("invalid field names")
-			// 	}
-			// 	fmt.Println("Values Names:")
-			// 	fmt.Println(valueNames.Cols)
-			//
-			// 	staticFields := []Field{}
-			// 	for k := range staticTypes {
-			// 		staticFields = append(staticFields, Field{
-			// 			dataType: staticTypes[k],
-			// 			name:     valueNames.Cols[k],
-			// 		})
-			// 	}
-			//
-			// 	dynamicFields := []Field{}
-			// 	for k := range dynamicTypes {
-			// 		dynamicFields = append(dynamicFields, Field{
-			// 			dataType: dynamicTypes[k],
-			// 			name:     valueNames.Cols[k+len(staticFields)],
-			// 		})
-			// 	}
-			// 	rowKey := hexutil.Encode(event.KeyTuple[0][:])
-			//
-			// 	values := []interface{}{}
-			// 	for _, v := range data.StaticData {
-			// 		values = append(values, v.Value.(string))
-			// 	}
-			// 	for _, v := range data.DynamicData {
-			// 		values = append(values, v.Value.(string))
-			// 	}
-			//
-			// 	table := Table{
-			// 		Schema: Schema{
-			// 			staticFields:  staticFields,
-			// 			dynamicFields: dynamicFields,
-			// 		},
-			// 		Data: map[string][]interface{}{
-			// 			rowKey: values,
-			// 		},
-			// 	}
-			// 	db.Tables[key] = table
-			//
-			// 	fmt.Println(db)
-			//
-			// 	//             staticFieldName :=storecore.DecodeNames(data.DynamicData[0].Value)
-			// 	//             dynamicFieldName
-			// 	// data.DynamicData
-			//
-			// panic("stop here")
+			tableName := storecore.KeyToTableName(event.TableId)
+			fmt.Println(tableName)
+			storecore.HandleStoreSpliceStaticData(db, event)
+		} else if v.Topics[0] == storecore.GetEventID(storecore.SpliceDynamicDataEventID) {
+			event, err := storecore.ParseStoreSpliceDynamicData(v)
+			if err != nil {
+				logger.LogError(fmt.Sprintf("[indexer] error decoding message:%s", err))
+				// TODO: what should we do here?
+				break
+			}
+			fmt.Println("Splice dynamic RECORD EVENT ------")
 
-			// fmt.Println(string(event.TableId[:]))
+			tableName := storecore.KeyToTableName(event.TableId)
+			fmt.Println(tableName)
+		} else {
+			panic("asd")
 		}
+
 		//       else {
 		// 	fmt.Println("qwe")
 		// 	fmt.Println(string(event.TableId[:]))
@@ -311,6 +245,7 @@ func Process(client *ethclient.EthClient) {
 	// eth.ProcessBlocks(client, database, big.NewInt(int64(startingHeight)), big.NewInt(int64(endHeight)))
 	fmt.Println("db")
 	fmt.Println(db)
+	storecore.PrintDebug(db)
 	quit := true
 
 	for !quit {
