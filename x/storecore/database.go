@@ -77,6 +77,16 @@ func (db *Database) AddRow(key *Key, rowID string, values []interface{}, raw *Ra
 	return true
 }
 
+func (db *Database) RemoveRow(key *Key, rowID string) bool {
+	_, ok := db.Tables[*key]
+	if !ok {
+		return false
+	}
+	delete(db.Tables[*key].Data, rowID)
+	delete(db.Tables[*key].RawData, rowID)
+	return true
+}
+
 func (db *Database) GetTable(key *Key) *Table {
 	_, ok := db.Tables[*key]
 	if !ok {

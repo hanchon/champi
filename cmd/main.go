@@ -157,6 +157,8 @@ func Process(client *ethclient.EthClient) {
 			fmt.Println("DELETE RECORD EVENT ------")
 			tableName := storecore.KeyToTableName(event.TableId)
 			fmt.Println(tableName)
+
+			storecore.HandleStoreDeleteRecord(db, event)
 		} else if v.Topics[0] == storecore.GetEventID(storecore.SpliceStaticDataEventID) {
 			event, err := storecore.ParseStoreSpliceStaticData(v)
 			if err != nil {
@@ -180,6 +182,8 @@ func Process(client *ethclient.EthClient) {
 
 			tableName := storecore.KeyToTableName(event.TableId)
 			fmt.Println(tableName)
+
+			storecore.HandleStoreSpliceDynamicData(db, event)
 		} else {
 			panic("asd")
 		}

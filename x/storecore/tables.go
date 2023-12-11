@@ -9,6 +9,17 @@ import (
 // "tbstoreTables"
 var STORE_TABLES = [32]byte{116, 98, 115, 116, 111, 114, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84, 97, 98, 108, 101, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
+// ResourcesIds
+var RESOURCES_TABLE = [32]byte{116, 98, 115, 116, 111, 114, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 82, 101, 115, 111, 117, 114, 99, 101, 73, 100, 115, 0, 0, 0, 0, 0}
+var RESOURCES_STATIC = []byte{0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 1, 0, 95, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+var RESOURCES_DYNAMIC = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 114, 101, 115, 111, 117, 114, 99, 101, 73, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 101, 120, 105, 115, 116, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+var RESOURCES_LENGTH = [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0, 0, 160, 0, 0, 0, 0, 0, 1, 64}
+var RESOURCES_CREATION_EVENT = StorecoreStoreSetRecord{
+	StaticData:     RESOURCES_STATIC,
+	EncodedLengths: RESOURCES_LENGTH,
+	DynamicData:    RESOURCES_DYNAMIC,
+}
+
 var STORE_TABLES_KEY = TableName{
 	ResourceType: "tb",
 	Namespace:    "store",
@@ -50,11 +61,15 @@ func HandleStoreSetRecord(db *Database, event *StorecoreStoreSetRecord) {
 
 		fmt.Println("creating tables")
 		fmt.Println(key)
+		fmt.Println(hexutil.Encode(event.KeyTuple[0][:]))
 		data := CreateNewTable(db, &key, event)
 		var STORE_KEY = Key{
 			world:     GetWorld(event.Raw),
 			TableName: KeyToTableName(STORE_TABLES),
 		}
+		fmt.Println(event.StaticData)
+		fmt.Println(event.DynamicData)
+		fmt.Println(event.EncodedLengths)
 		AddRow(db, event.KeyTuple, data, &STORE_KEY, &Raw{
 			StaticData:     event.StaticData,
 			DynamicData:    event.DynamicData,
@@ -211,8 +226,13 @@ func HandleStoreSpliceStaticData(db *Database, event *StorecoreStoreSpliceStatic
 
 	table := db.GetTable(&key)
 	if table == nil {
-		fmt.Println("----- Table NOT found while splice static -----")
-		return
+		if event.TableId != RESOURCES_TABLE {
+			fmt.Println("----- Table NOT found while splice static -----")
+			return
+		}
+		fmt.Println("FIX: early table creation for resources ids")
+		CreateNewTable(db, &key, &RESOURCES_CREATION_EVENT)
+		table = db.GetTable(&key)
 	}
 
 	rowKey := KeyTupleToDBKey(event.KeyTuple)
@@ -253,4 +273,67 @@ func HandleStoreSpliceStaticData(db *Database, event *StorecoreStoreSpliceStatic
 	}
 
 	table.Data[rowKey] = data
+}
+
+func HandleStoreSpliceDynamicData(db *Database, event *StorecoreStoreSpliceDynamicData) {
+	tableName := KeyToTableName(event.TableId)
+	key := Key{
+		world:     GetWorld(event.Raw),
+		TableName: tableName,
+	}
+
+	table := db.GetTable(&key)
+	if table == nil {
+		fmt.Println("----- Table NOT found while splice dynamic -----")
+		return
+	}
+
+	rowKey := KeyTupleToDBKey(event.KeyTuple)
+
+	prevValue, ok := table.RawData[rowKey]
+	data, _ := table.Data[rowKey]
+	if !ok {
+		fmt.Println("schema")
+		fmt.Println(table.ValueSchema)
+		prevValue = EmptyRaw(table.ValueSchema.staticFields)
+		data = make([]interface{}, len(table.ValueSchema.staticFields)+len(table.ValueSchema.dynamicFields))
+		for k := range data {
+			data[k] = ""
+		}
+	}
+
+	// We can read all the values because the Raw was init with the static length
+	fmt.Println(event.Start.Uint64())
+	fmt.Println(event.DeleteCount.Uint64())
+	fmt.Println("old data")
+	fmt.Println(prevValue.DynamicData)
+
+	prevValue.DynamicData = append(append(prevValue.DynamicData[0:event.Start.Uint64()], event.Data...), prevValue.DynamicData[event.Start.Uint64()+event.DeleteCount.Uint64():]...)
+	prevValue.EncodedLengths = event.EncodedLengths
+	fmt.Println("new data")
+	fmt.Println(prevValue.DynamicData)
+
+	// Decode it and store the decoded values
+	decodedData := DecodeRecord(append(prevValue.EncodedLengths[:], prevValue.DynamicData...), SchemaTypes{
+		Static:           []SchemaType{},
+		Dynamic:          FieldToSchema(table.ValueSchema.dynamicFields),
+		StaticDataLength: 0,
+	})
+
+	for k, v := range decodedData.DynamicData {
+		data[k+len(table.ValueSchema.staticFields)] = v.Value.(string)
+		fmt.Println("new value from splice: " + data[k+len(table.ValueSchema.staticFields)].(string))
+	}
+
+	table.Data[rowKey] = data
+}
+
+func HandleStoreDeleteRecord(db *Database, event *StorecoreStoreDeleteRecord) {
+	tableName := KeyToTableName(event.TableId)
+	key := Key{
+		world:     GetWorld(event.Raw),
+		TableName: tableName,
+	}
+	rowKey := KeyTupleToDBKey(event.KeyTuple)
+	db.RemoveRow(&key, rowKey)
 }
