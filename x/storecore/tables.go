@@ -20,6 +20,8 @@ var RESOURCES_CREATION_EVENT = StorecoreStoreSetRecord{
 	DynamicData:    RESOURCES_DYNAMIC,
 }
 
+// TODO: add FunctionSignatur here also, because a bug in MUD for old versions
+
 var STORE_TABLES_KEY = TableName{
 	ResourceType: "tb",
 	Namespace:    "store",
