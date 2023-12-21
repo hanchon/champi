@@ -249,7 +249,6 @@ func Process(client *ethclient.EthClient) {
 	// eth.ProcessBlocks(client, database, big.NewInt(int64(startingHeight)), big.NewInt(int64(endHeight)))
 	fmt.Println("db")
 	fmt.Println(db)
-	storecore.PrintDebug(db)
 	quit := true
 
 	for !quit {

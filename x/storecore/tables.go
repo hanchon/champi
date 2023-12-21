@@ -6,41 +6,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-// "tbstoreTables"
-var STORE_TABLES = [32]byte{116, 98, 115, 116, 111, 114, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 84, 97, 98, 108, 101, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-
-// ResourcesIds
-var RESOURCES_TABLE = [32]byte{116, 98, 115, 116, 111, 114, 101, 0, 0, 0, 0, 0, 0, 0, 0, 0, 82, 101, 115, 111, 117, 114, 99, 101, 73, 100, 115, 0, 0, 0, 0, 0}
-var RESOURCES_STATIC = []byte{0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 1, 0, 95, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-var RESOURCES_DYNAMIC = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 114, 101, 115, 111, 117, 114, 99, 101, 73, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 101, 120, 105, 115, 116, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-var RESOURCES_LENGTH = [32]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 160, 0, 0, 0, 0, 160, 0, 0, 0, 0, 0, 1, 64}
-var RESOURCES_CREATION_EVENT = StorecoreStoreSetRecord{
-	StaticData:     RESOURCES_STATIC,
-	EncodedLengths: RESOURCES_LENGTH,
-	DynamicData:    RESOURCES_DYNAMIC,
-}
-
-// TODO: add FunctionSignatur here also, because a bug in MUD for old versions
-
-var STORE_TABLES_KEY = TableName{
-	ResourceType: "tb",
-	Namespace:    "store",
-	Name:         "Tables",
-}
-
-// Resources
-const (
-	TABLE_PREFIX         = "tb"
-	OFFCHAINTABLE_PREFIX = "ot"
-	NAMESPACE_PREFIX     = "ns"
-	MODULE_PREFIX        = "md"
-	SYSTEM_PREFIX        = "sy"
-)
-
 func FieldToSchema(in []Field) []SchemaType {
 	out := make([]SchemaType, len(in))
 	for k := range in {
-		out[k] = in[k].dataType
+		out[k] = in[k].DataType
 	}
 	return out
 }
@@ -49,7 +18,6 @@ func HandleStoreSetRecord(db *Database, event *StorecoreStoreSetRecord) {
 	tableName := KeyToTableName(event.TableId)
 
 	if tableName.ResourceType != TABLE_PREFIX && tableName.ResourceType != OFFCHAINTABLE_PREFIX {
-		// if tableName.ResourceType != TABLE_PREFIX {
 		fmt.Printf("ignoring resource: %d  %s. %s  -  %s\n", len(event.KeyTuple), tableName.ResourceType, tableName.Name, tableName.Namespace)
 		return
 	}
@@ -105,8 +73,8 @@ func HandleStoreSetRecord(db *Database, event *StorecoreStoreSetRecord) {
 	}
 
 	data := DecodeRecord(append(event.StaticData, append(event.EncodedLengths[:], event.DynamicData...)...), SchemaTypes{
-		Static:           FieldToSchema(table.ValueSchema.staticFields),
-		Dynamic:          FieldToSchema(table.ValueSchema.dynamicFields),
+		Static:           FieldToSchema(table.ValueSchema.StaticFields),
+		Dynamic:          FieldToSchema(table.ValueSchema.DynamicFields),
 		StaticDataLength: 0,
 	})
 	AddRow(db, event.KeyTuple, data, &key, &Raw{
@@ -114,15 +82,6 @@ func HandleStoreSetRecord(db *Database, event *StorecoreStoreSetRecord) {
 		DynamicData:    event.DynamicData,
 		EncodedLengths: event.EncodedLengths,
 	})
-}
-
-func PrintDebug(db *Database) {
-	var STORE_KEY = Key{
-		world:     "0xE3a6D6D5570f1d87D45036eAC17342FfE32d8F46",
-		TableName: KeyToTableName(STORE_TABLES),
-	}
-	fmt.Println(db.Tables[STORE_KEY])
-	fmt.Println(len(db.Tables[STORE_KEY].Data))
 }
 
 func AddNamesToSchema(staticType, dynamicType []SchemaType, data DataElement) Schema {
@@ -146,22 +105,22 @@ func AddNamesToSchema(staticType, dynamicType []SchemaType, data DataElement) Sc
 	staticFields := make([]Field, len(staticType))
 	for k := range staticType {
 		staticFields[k] = Field{
-			dataType: staticType[k],
-			name:     names.Cols[k],
+			DataType: staticType[k],
+			Name:     names.Cols[k],
 		}
 	}
 
 	dynamicFields := make([]Field, len(dynamicType))
 	for k := range dynamicType {
 		dynamicFields[k] = Field{
-			dataType: dynamicType[k],
-			name:     names.Cols[k+len(staticFields)],
+			DataType: dynamicType[k],
+			Name:     names.Cols[k+len(staticFields)],
 		}
 	}
 
 	return Schema{
-		staticFields:  staticFields,
-		dynamicFields: dynamicFields,
+		StaticFields:  staticFields,
+		DynamicFields: dynamicFields,
 	}
 }
 
@@ -244,8 +203,8 @@ func HandleStoreSpliceStaticData(db *Database, event *StorecoreStoreSpliceStatic
 	if !ok {
 		fmt.Println("schema")
 		fmt.Println(table.ValueSchema)
-		prevValue = EmptyRaw(table.ValueSchema.staticFields)
-		data = make([]interface{}, len(table.ValueSchema.staticFields)+len(table.ValueSchema.dynamicFields))
+		prevValue = EmptyRaw(table.ValueSchema.StaticFields)
+		data = make([]interface{}, len(table.ValueSchema.StaticFields)+len(table.ValueSchema.DynamicFields))
 		for k := range data {
 			data[k] = ""
 		}
@@ -264,7 +223,7 @@ func HandleStoreSpliceStaticData(db *Database, event *StorecoreStoreSpliceStatic
 
 	// Decode it and store the decoded values
 	decodedData := DecodeRecord(prevValue.StaticData, SchemaTypes{
-		Static:           FieldToSchema(table.ValueSchema.staticFields),
+		Static:           FieldToSchema(table.ValueSchema.StaticFields),
 		Dynamic:          []SchemaType{},
 		StaticDataLength: 0,
 	})
@@ -297,8 +256,8 @@ func HandleStoreSpliceDynamicData(db *Database, event *StorecoreStoreSpliceDynam
 	if !ok {
 		fmt.Println("schema")
 		fmt.Println(table.ValueSchema)
-		prevValue = EmptyRaw(table.ValueSchema.staticFields)
-		data = make([]interface{}, len(table.ValueSchema.staticFields)+len(table.ValueSchema.dynamicFields))
+		prevValue = EmptyRaw(table.ValueSchema.StaticFields)
+		data = make([]interface{}, len(table.ValueSchema.StaticFields)+len(table.ValueSchema.DynamicFields))
 		for k := range data {
 			data[k] = ""
 		}
@@ -318,13 +277,13 @@ func HandleStoreSpliceDynamicData(db *Database, event *StorecoreStoreSpliceDynam
 	// Decode it and store the decoded values
 	decodedData := DecodeRecord(append(prevValue.EncodedLengths[:], prevValue.DynamicData...), SchemaTypes{
 		Static:           []SchemaType{},
-		Dynamic:          FieldToSchema(table.ValueSchema.dynamicFields),
+		Dynamic:          FieldToSchema(table.ValueSchema.DynamicFields),
 		StaticDataLength: 0,
 	})
 
 	for k, v := range decodedData.DynamicData {
-		data[k+len(table.ValueSchema.staticFields)] = v.Value.(string)
-		fmt.Println("new value from splice: " + data[k+len(table.ValueSchema.staticFields)].(string))
+		data[k+len(table.ValueSchema.StaticFields)] = v.Value.(string)
+		fmt.Println("new value from splice: " + data[k+len(table.ValueSchema.StaticFields)].(string))
 	}
 
 	table.Data[rowKey] = data

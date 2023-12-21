@@ -12,26 +12,34 @@ type Database struct {
 }
 
 type Field struct {
-	dataType SchemaType
-	name     string
+	DataType SchemaType `json:"dt"`
+	Name     string     `json:"name"`
 }
 
 type Schema struct {
-	staticFields  []Field
-	dynamicFields []Field
+	StaticFields  []Field `json:"sf"`
+	DynamicFields []Field `json:"df"`
 }
 
 type Raw struct {
-	StaticData     []byte
-	EncodedLengths [32]byte
-	DynamicData    []byte
+	StaticData     []byte   `json:"sd"`
+	EncodedLengths [32]byte `json:"el"`
+	DynamicData    []byte   `json:"dd"`
+}
+
+type Table struct {
+	Name        Key                      `json:"key"`
+	KeySchema   Schema                   `json:"ks"`
+	ValueSchema Schema                   `json:"vs"`
+	Data        map[string][]interface{} `json:"d"`
+	RawData     map[string]*Raw          `json:"r"`
 }
 
 func EmptyRaw(staticFields []Field) *Raw {
 	length := uint64(0)
 	for k := range staticFields {
 		fmt.Println(staticFields[k])
-		length += GetStaticByteLength(staticFields[k].dataType)
+		length += GetStaticByteLength(staticFields[k].DataType)
 	}
 
 	fmt.Println("empty row length")
@@ -42,14 +50,6 @@ func EmptyRaw(staticFields []Field) *Raw {
 		EncodedLengths: [32]byte{},
 		DynamicData:    []byte{},
 	}
-}
-
-type Table struct {
-	Name        Key
-	KeySchema   Schema
-	ValueSchema Schema
-	Data        map[string][]interface{}
-	RawData     map[string]*Raw
 }
 
 func NewDatabase() *Database {
